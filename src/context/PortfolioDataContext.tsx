@@ -3,6 +3,7 @@ import {
   type PortfolioData,
   type HeroData,
   type AboutData,
+  type ContactData,
   initialPortfolioData,
   getStoredPortfolioData,
   saveStoredPortfolioData,
@@ -15,6 +16,7 @@ interface PortfolioDataContextType {
   data: PortfolioData
   updateHero: (hero: Partial<HeroData>) => void
   updateAbout: (about: Partial<AboutData>) => void
+  updateContact: (contact: Partial<ContactData>) => void
   addProject: (project: Omit<Project, 'id' | 'number'>) => void
   updateProject: (id: string, project: Partial<Project>) => void
   deleteProject: (id: string) => void
@@ -47,6 +49,14 @@ export const PortfolioDataProvider: React.FC<{ children: React.ReactNode }> = ({
       about: { ...prev.about, ...about },
     }))
   }
+
+  const updateContact = (contact: Partial<ContactData>) => {
+    setData((prev) => ({
+      ...prev,
+      contact: { ...prev.contact, ...contact },
+    }))
+  }
+
 
   const addProject = (projectInput: Omit<Project, 'id' | 'number'>) => {
     setData((prev) => {
@@ -138,6 +148,7 @@ export const PortfolioDataProvider: React.FC<{ children: React.ReactNode }> = ({
         data,
         updateHero,
         updateAbout,
+        updateContact,
         addProject,
         updateProject,
         deleteProject,

@@ -22,17 +22,41 @@ export const FooterSection: React.FC = () => {
       <div className="max-w-7xl mx-auto flex flex-col items-center text-center">
         {/* Contact CTA */}
         <FadeIn delay={0.1} y={20} className="w-full flex flex-col items-center">
-          <span className="text-[11px] sm:text-xs uppercase tracking-widest text-[#D7E2EA]/50 mb-2 sm:mb-3 font-mono">
-            Got a project in mind?
-          </span>
+          <div className="flex items-center gap-2 mb-2 sm:mb-3">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-[11px] sm:text-xs uppercase tracking-widest text-emerald-300/80 font-mono">
+              {data?.contact?.availabilityText || 'Available for freelance & 3D projects'}
+            </span>
+          </div>
           <h2
             className="hero-heading font-black uppercase tracking-tight leading-none mb-6 sm:mb-8"
             style={{ fontSize: 'clamp(2rem, 7vw, 5.5rem)' }}
           >
             LET'S CONNECT
           </h2>
-          <div className="mb-10 sm:mb-14">
+          <div className="mb-6 sm:mb-8">
             <ContactButton text="START A CONVERSATION" />
+          </div>
+
+          {/* Quick Direct Contact Links */}
+          <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-4 mb-8 sm:mb-12">
+            <a
+              href={`https://wa.me/${data?.contact?.whatsappRaw || '918505002058'}?text=${encodeURIComponent(data?.contact?.whatsappMessage || "Hi Raman, I'd like to discuss a project!")}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-mono transition-all duration-200 active:scale-95"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              <span>WhatsApp: {data?.contact?.whatsapp || '+91 8505002058'}</span>
+            </a>
+
+            <a
+              href={`mailto:${data?.contact?.email || 'ramandeepkamboj4574@gmail.com'}`}
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-300 text-xs font-mono transition-all duration-200 active:scale-95"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+              <span>{data?.contact?.email || 'ramandeepkamboj4574@gmail.com'}</span>
+            </a>
           </div>
         </FadeIn>
 

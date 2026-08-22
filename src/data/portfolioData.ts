@@ -25,9 +25,18 @@ export interface SocialLinkData {
   href: string
 }
 
+export interface ContactData {
+  whatsapp: string
+  whatsappRaw: string
+  whatsappMessage: string
+  email: string
+  availabilityText: string
+}
+
 export interface PortfolioData {
   hero: HeroData
   about: AboutData
+  contact: ContactData
   projects: Project[]
   services: ServiceItem[]
   socials: SocialLinkData[]
@@ -50,6 +59,13 @@ export const initialPortfolioData: PortfolioData = {
     experienceYears: "5+",
     completedProjects: "40+",
   },
+  contact: {
+    whatsapp: "+91 8505002058",
+    whatsappRaw: "918505002058",
+    whatsappMessage: "Hi Raman, I saw your 3D portfolio and would love to discuss a project!",
+    email: "ramandeepkamboj4574@gmail.com",
+    availabilityText: "Available for freelance & 3D projects",
+  },
   projects: projectsData,
   services: servicesData,
   socials: siteConfig.socials.map(s => ({ name: s.name, href: s.href })),
@@ -64,7 +80,14 @@ export const getStoredPortfolioData = (): PortfolioData => {
     if (saved) {
       const parsed = JSON.parse(saved)
       if (parsed && parsed.hero && Array.isArray(parsed.projects)) {
-        return parsed
+        return {
+          ...initialPortfolioData,
+          ...parsed,
+          contact: {
+            ...initialPortfolioData.contact,
+            ...(parsed.contact || {}),
+          },
+        }
       }
     }
   } catch (e) {
