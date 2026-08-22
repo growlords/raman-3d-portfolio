@@ -13,8 +13,10 @@ export const siteConfig = {
   name: "Raman",
   title: "Raman — 3D Creator",
   tagline: "3D Creator & Visual Designer",
-  email: "mailto:YOUR_EMAIL_HERE",
-  contactEmailDisplay: "hello@raman3d.design",
+  email: "mailto:ramandeepkamboj4574@gmail.com",
+  contactEmailDisplay: "ramandeepkamboj4574@gmail.com",
+  whatsapp: "+91 8505002058",
+  whatsappUrl: "https://wa.me/918505002058",
   portraitPath: "/raman-hero.png",
   
   hero: {
