@@ -9,13 +9,25 @@ export const MarqueeSection: React.FC = () => {
 
   useEffect(() => {
     let animationFrameId: number
+    let isVisible = false
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        isVisible = entry.isIntersecting
+      },
+      { rootMargin: '150px' }
+    )
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current)
+    }
 
     const handleScroll = () => {
-      if (!sectionRef.current || !row1Ref.current || !row2Ref.current) return
+      if (!isVisible || !sectionRef.current || !row1Ref.current || !row2Ref.current) return
 
       const sectionRect = sectionRef.current.getBoundingClientRect()
       const sectionTop = window.scrollY + sectionRect.top
-      const offset = (window.scrollY - sectionTop + window.innerHeight) * 0.3
+      const offset = (window.scrollY - sectionTop + window.innerHeight) * 0.28
 
       const row1X = offset - 200
       const row2X = -(offset - 200)
@@ -25,6 +37,7 @@ export const MarqueeSection: React.FC = () => {
     }
 
     const onScroll = () => {
+      if (!isVisible) return
       cancelAnimationFrame(animationFrameId)
       animationFrameId = requestAnimationFrame(handleScroll)
     }
@@ -34,6 +47,7 @@ export const MarqueeSection: React.FC = () => {
     handleScroll()
 
     return () => {
+      observer.disconnect()
       cancelAnimationFrame(animationFrameId)
       window.removeEventListener('scroll', onScroll)
       window.removeEventListener('resize', onScroll)
@@ -41,8 +55,9 @@ export const MarqueeSection: React.FC = () => {
   }, [])
 
   // Duplicate items for continuous visuals across wide displays
-  const row1Items = [...marqueeRow1, ...marqueeRow1, ...marqueeRow1]
-  const row2Items = [...marqueeRow2, ...marqueeRow2, ...marqueeRow2]
+  const row1Items = [...marqueeRow1, ...marqueeRow1]
+  const row2Items = [...marqueeRow2, ...marqueeRow2]
+
 
   return (
     <section

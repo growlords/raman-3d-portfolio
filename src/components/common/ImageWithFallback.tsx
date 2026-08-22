@@ -36,6 +36,7 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
           src={src}
           alt={alt}
           loading={loading}
+          decoding="async"
           onLoad={() => setIsLoaded(true)}
           onError={() => setHasError(true)}
           className={`w-full h-full object-cover transition-opacity duration-500 ${

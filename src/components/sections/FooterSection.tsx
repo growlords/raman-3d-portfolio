@@ -1,9 +1,12 @@
-import React, { useState } from 'react'
+import React, { useState, lazy, Suspense } from 'react'
 import { FadeIn } from '../common/FadeIn'
 import { ContactButton } from '../common/ContactButton'
 import { ArrowUp, Lock } from 'lucide-react'
 import { usePortfolioData } from '../../context/PortfolioDataContext'
-import { AdminCMSModal } from '../admin/AdminCMSModal'
+
+const AdminCMSModal = lazy(() =>
+  import('../admin/AdminCMSModal').then((m) => ({ default: m.AdminCMSModal }))
+)
 
 export const FooterSection: React.FC = () => {
   const { data } = usePortfolioData()
@@ -100,8 +103,12 @@ export const FooterSection: React.FC = () => {
         </div>
       </div>
 
-      {/* Admin CMS Modal */}
-      <AdminCMSModal isOpen={isCMSOpen} onClose={() => setIsCMSOpen(false)} />
+      {/* Admin CMS Modal (Lazy Loaded) */}
+      {isCMSOpen && (
+        <Suspense fallback={null}>
+          <AdminCMSModal isOpen={isCMSOpen} onClose={() => setIsCMSOpen(false)} />
+        </Suspense>
+      )}
     </footer>
   )
 }

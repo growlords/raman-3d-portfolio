@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react'
 import * as THREE from 'three'
-import { elasticAudio } from '../../utils/elasticAudio'
+import { audioManager } from '../../utils/audioManager'
 
 export interface ElasticCharacterProps {
   imageSrc?: string
@@ -9,7 +9,7 @@ export interface ElasticCharacterProps {
 }
 
 export const ElasticCharacter: React.FC<ElasticCharacterProps> = ({
-  imageSrc = '/raman-hero.png',
+  imageSrc = '/raman-hero.webp',
   className = '',
   onInteractionStart,
 }) => {
@@ -210,7 +210,7 @@ export const ElasticCharacter: React.FC<ElasticCharacterProps> = ({
         dragOffset.set(0, 0, 0)
 
         // Audio trigger
-        elasticAudio.playGrab()
+        audioManager.playGrab()
         if (onInteractionStart) onInteractionStart()
 
         // Grab point in 3D world space
@@ -285,7 +285,7 @@ export const ElasticCharacter: React.FC<ElasticCharacterProps> = ({
 
           // Dynamic Audio Reactivity
           const stretchNorm = Math.min(1.0, dragOffset.length() / (MAX_DRAG_DISTANCE * 0.5))
-          elasticAudio.updateStretch(stretchNorm, mouseVelocity)
+          audioManager.updateStretch(stretchNorm, mouseVelocity)
         }
       } else if (mesh) {
         // Hover cursor detection
@@ -315,7 +315,7 @@ export const ElasticCharacter: React.FC<ElasticCharacterProps> = ({
 
         // Snap-back audio feedback
         const intensity = Math.min(1.0, dragOffset.length() / (MAX_DRAG_DISTANCE * 0.4))
-        elasticAudio.playSnapBack(intensity)
+        audioManager.playSnapBack(intensity)
       }
     }
 

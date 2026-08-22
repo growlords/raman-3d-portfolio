@@ -27,6 +27,7 @@ export const AboutSection: React.FC = () => {
             alt="Floating Moon 3D"
             className="w-full h-auto drop-shadow-[0_15px_25px_rgba(0,0,0,0.7)] animate-[float_6s_ease-in-out_infinite]"
             loading="lazy"
+            decoding="async"
           />
         </FadeIn>
       </div>
@@ -43,6 +44,7 @@ export const AboutSection: React.FC = () => {
             alt="3D Creative Geometry"
             className="w-full h-auto drop-shadow-[0_15px_25px_rgba(0,0,0,0.7)] animate-[float_7s_ease-in-out_infinite_1s]"
             loading="lazy"
+            decoding="async"
           />
         </FadeIn>
       </div>
@@ -59,6 +61,7 @@ export const AboutSection: React.FC = () => {
             alt="3D Lego Icon"
             className="w-full h-auto drop-shadow-[0_15px_25px_rgba(0,0,0,0.7)] animate-[float_5.5s_ease-in-out_infinite_0.5s]"
             loading="lazy"
+            decoding="async"
           />
         </FadeIn>
       </div>
@@ -75,6 +78,7 @@ export const AboutSection: React.FC = () => {
             alt="3D Group Icon"
             className="w-full h-auto drop-shadow-[0_15px_25px_rgba(0,0,0,0.7)] animate-[float_6.5s_ease-in-out_infinite_1.5s]"
             loading="lazy"
+            decoding="async"
           />
         </FadeIn>
       </div>

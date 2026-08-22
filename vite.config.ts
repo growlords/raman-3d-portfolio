@@ -8,4 +8,20 @@ export default defineConfig({
     tailwindcss(),
     react(),
   ],
+  build: {
+    target: 'esnext',
+    cssCodeSplit: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          if (id.includes('node_modules/three')) {
+            return 'three'
+          }
+          if (id.includes('node_modules/framer-motion')) {
+            return 'framer'
+          }
+        },
+      },
+    },
+  },
 })

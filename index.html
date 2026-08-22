@@ -22,10 +22,15 @@
     <meta property="twitter:title" content="Raman — 3D Creator" />
     <meta property="twitter:description" content="Raman — 3D creator specializing in immersive visuals, 3D design, motion, branding, and digital experiences." />
 
-    <!-- Google Fonts: Kanit -->
+    <!-- Google Fonts & CDN Preconnects -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="https://images.higgs.ai" />
+    <link rel="dns-prefetch" href="https://motionsites.ai" />
     <link href="https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet" />
+
+    <!-- Preload Critical Hero 3D Texture -->
+    <link rel="preload" as="image" href="/raman-hero.webp" type="image/webp" fetchpriority="high" />
   </head>
   <body class="bg-[#0C0C0C] text-[#D7E2EA] antialiased selection:bg-purple-600 selection:text-white">
     <div id="root"></div>

@@ -1,21 +1,34 @@
-import React, { useState, useEffect } from 'react'
-import { Volume2, VolumeX, Edit3 } from 'lucide-react'
+import React, { useState, useEffect, lazy, Suspense } from 'react'
+import { Volume2, Volume1, VolumeX, Edit3 } from 'lucide-react'
 import { FadeIn } from '../common/FadeIn'
 import { Navbar } from '../common/Navbar'
 import { ContactButton } from '../common/ContactButton'
 import { ElasticCharacter } from '../common/ElasticCharacter'
-import { elasticAudio } from '../../utils/elasticAudio'
+import { audioManager, type AudioState } from '../../utils/audioManager'
 import { usePortfolioData } from '../../context/PortfolioDataContext'
-import { AdminCMSModal } from '../admin/AdminCMSModal'
+
+const AdminCMSModal = lazy(() =>
+  import('../admin/AdminCMSModal').then((m) => ({ default: m.AdminCMSModal }))
+)
 
 export const HeroSection: React.FC = () => {
   const { data } = usePortfolioData()
-  const [isMuted, setIsMuted] = useState(elasticAudio.getIsMuted())
+  const [audioState, setAudioState] = useState<AudioState>(audioManager.getState())
   const [isCMSOpen, setIsCMSOpen] = useState(false)
 
+  useEffect(() => {
+    const unsubscribe = audioManager.subscribe((state) => {
+      setAudioState(state)
+    })
+    // Attempt graceful initial autoplay according to browser policy
+    audioManager.attemptAutoplay()
+    return () => {
+      unsubscribe()
+    }
+  }, [])
+
   const handleToggleSound = () => {
-    const nextMuted = elasticAudio.toggleMute()
-    setIsMuted(nextMuted)
+    audioManager.toggleAudio()
   }
 
   // Global keyboard shortcut (Ctrl+K or Cmd+K) to open Admin CMS
@@ -91,18 +104,40 @@ export const HeroSection: React.FC = () => {
         {/* Sound FX Toggle Pill */}
         <button
           onClick={handleToggleSound}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#16171E]/90 hover:bg-[#222430] border border-[#D7E2EA]/20 text-[#D7E2EA] text-xs font-mono tracking-wider backdrop-blur-md transition-all duration-200 cursor-pointer shadow-lg active:scale-95"
-          title={isMuted ? 'Unmute Sound FX' : 'Mute Sound FX'}
+          className={`
+            flex items-center gap-1.5 px-3 py-1.5 rounded-full
+            border text-xs font-mono tracking-wider backdrop-blur-md
+            transition-all duration-200 cursor-pointer shadow-lg active:scale-95
+            ${
+              audioState.isPlaying
+                ? 'bg-purple-600/30 hover:bg-purple-600/50 border-purple-500/40 text-purple-200'
+                : audioState.needsInteraction
+                ? 'bg-amber-500/20 hover:bg-amber-500/30 border-amber-500/40 text-amber-200 animate-pulse'
+                : 'bg-[#16171E]/90 hover:bg-[#222430] border-[#D7E2EA]/20 text-[#D7E2EA]'
+            }
+          `}
+          title={
+            audioState.isPlaying
+              ? 'Music & SFX ON (Click to Mute)'
+              : audioState.needsInteraction
+              ? 'Sound paused by browser autoplay policy (Tap anywhere to enable)'
+              : 'Sound Muted (Click to Unmute)'
+          }
         >
-          {isMuted ? (
+          {audioState.isPlaying ? (
             <>
-              <VolumeX size={13} className="text-red-400" />
-              <span className="text-[10px] text-red-400 uppercase hidden sm:inline">MUTED</span>
+              <Volume2 size={13} className="text-purple-400 animate-pulse" />
+              <span className="text-[10px] text-purple-300 uppercase font-semibold">SOUND ON</span>
+            </>
+          ) : audioState.needsInteraction ? (
+            <>
+              <Volume1 size={13} className="text-amber-400" />
+              <span className="text-[10px] text-amber-300 uppercase font-semibold">TAP FOR SOUND</span>
             </>
           ) : (
             <>
-              <Volume2 size={13} className="text-purple-400 animate-pulse" />
-              <span className="text-[10px] text-purple-300 uppercase hidden sm:inline">SFX</span>
+              <VolumeX size={13} className="text-red-400" />
+              <span className="text-[10px] text-red-400 uppercase">MUTED</span>
             </>
           )}
         </button>
@@ -119,8 +154,12 @@ export const HeroSection: React.FC = () => {
         </button>
       </div>
 
-      {/* Admin CMS Modal */}
-      <AdminCMSModal isOpen={isCMSOpen} onClose={() => setIsCMSOpen(false)} />
+      {/* Admin CMS Modal (Lazy Loaded) */}
+      {isCMSOpen && (
+        <Suspense fallback={null}>
+          <AdminCMSModal isOpen={isCMSOpen} onClose={() => setIsCMSOpen(false)} />
+        </Suspense>
+      )}
     </header>
   )
 }
