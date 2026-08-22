@@ -186,6 +186,7 @@ export const ElasticCharacter: React.FC<ElasticCharacterProps> = ({
     // 4. Raycasting & Drag Handlers
     const updatePointer = (clientX: number, clientY: number) => {
       const rect = renderer.domElement.getBoundingClientRect()
+      if (rect.width === 0 || rect.height === 0) return
       const newX = ((clientX - rect.left) / rect.width) * 2 - 1
       const newY = -((clientY - rect.top) / rect.height) * 2 + 1
 
@@ -199,7 +200,7 @@ export const ElasticCharacter: React.FC<ElasticCharacterProps> = ({
     }
 
     const onPointerDown = (e: MouseEvent | TouchEvent) => {
-      if (!mesh) return
+      if (!mesh || !camera) return
       const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
       const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
       updatePointer(clientX, clientY)
@@ -258,7 +259,7 @@ export const ElasticCharacter: React.FC<ElasticCharacterProps> = ({
       const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
       updatePointer(clientX, clientY)
 
-      if (isDragging && mesh) {
+      if (isDragging && mesh && camera) {
         if ('touches' in e && e.cancelable) {
           e.preventDefault()
         }
@@ -295,7 +296,7 @@ export const ElasticCharacter: React.FC<ElasticCharacterProps> = ({
           const stretchNorm = Math.min(1.0, dragOffset.length() / (MAX_DRAG_DISTANCE * 0.5))
           audioManager.updateStretch(stretchNorm, mouseVelocity)
         }
-      } else if (mesh) {
+      } else if (mesh && camera) {
         // Hover cursor detection
         raycaster.setFromCamera(pointer, camera)
         const intersects = raycaster.intersectObject(mesh)
@@ -327,6 +328,48 @@ export const ElasticCharacter: React.FC<ElasticCharacterProps> = ({
       }
     }
 
+    // Force release and full reset
+    const forceResetDeformation = () => {
+      isDragging = false
+      isSpringActive = false
+      isHovering = false
+      dragOffset.set(0, 0, 0)
+      dragVelocity.set(0, 0, 0)
+      targetRotation.set(0, 0)
+      pointer.set(-999, -999)
+      container.style.cursor = 'default'
+
+      if (mesh && basePositions) {
+        const posAttr = mesh.geometry.attributes.position
+        const count = posAttr.count
+        for (let i = 0; i < count; i++) {
+          posAttr.setXYZ(i, basePositions[i * 3], basePositions[i * 3 + 1], basePositions[i * 3 + 2])
+        }
+        posAttr.needsUpdate = true
+        mesh.geometry.computeVertexNormals()
+        mesh.rotation.set(0, 0, 0)
+      }
+    }
+
+    // Handle scroll events: reset rotation and release drag when user scrolls
+    const handleScroll = () => {
+      const scrollY = window.scrollY || window.pageYOffset || 0
+      if (scrollY > 40) {
+        if (isDragging) {
+          isDragging = false
+          isSpringActive = true
+        }
+        targetRotation.set(0, 0)
+        pointer.set(-999, -999)
+        isHovering = false
+      } else {
+        // At the very top (scrollY <= 40), ensure zero residual tilt
+        if (!isHovering && !isDragging) {
+          targetRotation.set(0, 0)
+        }
+      }
+    }
+
     // Event listeners
     const canvas = renderer.domElement
     canvas.addEventListener('mousedown', onPointerDown)
@@ -336,6 +379,13 @@ export const ElasticCharacter: React.FC<ElasticCharacterProps> = ({
     canvas.addEventListener('touchstart', onPointerDown, { passive: false })
     window.addEventListener('touchmove', onPointerMove, { passive: false })
     window.addEventListener('touchend', onPointerUp)
+    window.addEventListener('touchcancel', onPointerUp)
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    window.addEventListener('blur', forceResetDeformation)
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) forceResetDeformation()
+    })
 
     // 5. Animation & Spring Simulation Loop
     let lastTime = performance.now()
@@ -352,15 +402,31 @@ export const ElasticCharacter: React.FC<ElasticCharacterProps> = ({
         return
       }
 
-      // Responsive base Y + subtle alive idle breathing animation when not dragged
-      const { baseY } = getResponsiveLayout()
+      const scrollY = window.scrollY || window.pageYOffset || 0
+      const isAtTop = scrollY <= 20
+
+      // If at top of page and not actively hovering/dragging, decay rotation to absolute zero
+      if (isAtTop && !isHovering && !isDragging) {
+        targetRotation.set(0, 0)
+      }
+
+      // Responsive base Y + subtle alive idle breathing animation
+      const { baseY, scale: responsiveScale } = getResponsiveLayout()
       const idleFloatY = isDragging ? 0 : Math.sin(elapsed * 1.6) * 0.02
-      const idleFloatZ = isDragging ? 0 : Math.cos(elapsed * 1.2) * 0.015
       mesh.position.y = baseY + idleFloatY
 
-      // Head / Eye Cursor Orientation Tracking
+      // Always maintain strictly uniform scale (equal on X, Y, Z)
+      mesh.scale.set(responsiveScale, responsiveScale, responsiveScale)
+
+      // Smooth Head / Eye Cursor Orientation Tracking
       mesh.rotation.y += (targetRotation.y - mesh.rotation.y) * 0.09
       mesh.rotation.x += (targetRotation.x - mesh.rotation.x) * 0.09
+      mesh.rotation.z += (0 - mesh.rotation.z) * 0.09
+
+      // Snap micro-residuals to exact 0 to prevent rotation drift
+      if (Math.abs(mesh.rotation.y) < 0.0003 && targetRotation.y === 0) mesh.rotation.y = 0
+      if (Math.abs(mesh.rotation.x) < 0.0003 && targetRotation.x === 0) mesh.rotation.x = 0
+      if (Math.abs(mesh.rotation.z) < 0.0003) mesh.rotation.z = 0
 
       // Spring Physics Simulation
       if (isSpringActive) {
@@ -385,7 +451,7 @@ export const ElasticCharacter: React.FC<ElasticCharacterProps> = ({
         const count = posAttr.count
         const dx = dragOffset.x
         const dy = dragOffset.y
-        const dz = dragOffset.z + Math.hypot(dx, dy) * 0.28 + idleFloatZ
+        const dz = dragOffset.z + Math.hypot(dx, dy) * 0.28
 
         for (let i = 0; i < count; i++) {
           const w = vertexWeights[i]
@@ -413,6 +479,26 @@ export const ElasticCharacter: React.FC<ElasticCharacterProps> = ({
 
         posAttr.needsUpdate = true
         mesh.geometry.computeVertexNormals()
+      } else if (basePositions) {
+        // Safe Vertex Restoration: Guarantee mesh returns 100% straight to base geometry
+        const posAttr = mesh.geometry.attributes.position
+        const count = posAttr.count
+        let needsRestore = false
+
+        for (let i = 0; i < count; i++) {
+          const bx = basePositions[i * 3]
+          const by = basePositions[i * 3 + 1]
+          const bz = basePositions[i * 3 + 2]
+          if (posAttr.getX(i) !== bx || posAttr.getY(i) !== by || posAttr.getZ(i) !== bz) {
+            posAttr.setXYZ(i, bx, by, bz)
+            needsRestore = true
+          }
+        }
+
+        if (needsRestore) {
+          posAttr.needsUpdate = true
+          mesh.geometry.computeVertexNormals()
+        }
       }
 
       renderer.render(scene, camera)
@@ -430,8 +516,8 @@ export const ElasticCharacter: React.FC<ElasticCharacterProps> = ({
       renderer.setSize(w, h)
 
       if (mesh) {
-        const { scale } = getResponsiveLayout()
-        mesh.scale.set(scale, scale, scale)
+        const { scale: responsiveScale } = getResponsiveLayout()
+        mesh.scale.set(responsiveScale, responsiveScale, responsiveScale)
       }
     }
 
@@ -440,12 +526,15 @@ export const ElasticCharacter: React.FC<ElasticCharacterProps> = ({
     return () => {
       cancelAnimationFrame(animationFrameId)
       window.removeEventListener('resize', handleResize)
+      window.removeEventListener('scroll', handleScroll)
+      window.removeEventListener('blur', forceResetDeformation)
       canvas.removeEventListener('mousedown', onPointerDown)
       window.removeEventListener('mousemove', onPointerMove)
       window.removeEventListener('mouseup', onPointerUp)
       canvas.removeEventListener('touchstart', onPointerDown)
       window.removeEventListener('touchmove', onPointerMove)
       window.removeEventListener('touchend', onPointerUp)
+      window.removeEventListener('touchcancel', onPointerUp)
 
       if (container && renderer.domElement) {
         container.removeChild(renderer.domElement)
@@ -467,4 +556,3 @@ export const ElasticCharacter: React.FC<ElasticCharacterProps> = ({
     </div>
   )
 }
-
