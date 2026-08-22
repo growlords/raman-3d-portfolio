@@ -85,7 +85,7 @@ export const ElasticCharacter: React.FC<ElasticCharacterProps> = ({
       powerPreference: 'high-performance',
     })
     renderer.setSize(width, height)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, window.innerWidth < 640 ? 1.5 : 2))
     renderer.outputColorSpace = THREE.SRGBColorSpace
     container.appendChild(renderer.domElement)
 
@@ -106,9 +106,17 @@ export const ElasticCharacter: React.FC<ElasticCharacterProps> = ({
     scene.add(bottomGlow)
 
     // 3. Load Character Texture and Build Dense 3D Organic Curved Mesh
+    const isMobileScreen = typeof window !== 'undefined' && window.innerWidth < 640
+    const actualSrc =
+      imageSrc === '/raman-hero.png' || imageSrc === '/raman-hero.webp'
+        ? isMobileScreen
+          ? '/raman-hero-mobile.webp'
+          : '/raman-hero.webp'
+        : imageSrc
+
     const textureLoader = new THREE.TextureLoader()
     textureLoader.load(
-      imageSrc,
+      actualSrc,
       (texture) => {
         texture.colorSpace = THREE.SRGBColorSpace
         texture.generateMipmaps = true
@@ -118,9 +126,9 @@ export const ElasticCharacter: React.FC<ElasticCharacterProps> = ({
         const planeHeight = 2.45
         const planeWidth = planeHeight * imgAspect
 
-        // High-density grid (120x120) for continuous organic rubber deformation
-        const segmentsX = 120
-        const segmentsY = 120
+        // Responsive grid density for organic rubber deformation
+        const segmentsX = isMobileScreen ? 64 : 100
+        const segmentsY = isMobileScreen ? 64 : 100
         const geometry = new THREE.PlaneGeometry(
           planeWidth,
           planeHeight,

@@ -80,9 +80,17 @@ export const getStoredPortfolioData = (): PortfolioData => {
     if (saved) {
       const parsed = JSON.parse(saved)
       if (parsed && parsed.hero && Array.isArray(parsed.projects)) {
+        if (parsed.hero.portraitPath === '/raman-hero.png') {
+          parsed.hero.portraitPath = '/raman-hero.webp'
+        }
         return {
           ...initialPortfolioData,
           ...parsed,
+          hero: {
+            ...initialPortfolioData.hero,
+            ...parsed.hero,
+            portraitPath: parsed.hero.portraitPath === '/raman-hero.png' ? '/raman-hero.webp' : (parsed.hero.portraitPath || '/raman-hero.webp'),
+          },
           contact: {
             ...initialPortfolioData.contact,
             ...(parsed.contact || {}),

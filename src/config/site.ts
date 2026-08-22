@@ -17,7 +17,7 @@ export const siteConfig = {
   contactEmailDisplay: "ramandeepkamboj4574@gmail.com",
   whatsapp: "+91 8505002058",
   whatsappUrl: "https://wa.me/918505002058",
-  portraitPath: "/raman-hero.png",
+  portraitPath: "/raman-hero.webp",
   
   hero: {
     greeting: "HI, I'M RAMAN",
