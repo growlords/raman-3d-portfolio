@@ -52,6 +52,25 @@ export const ElasticCharacter: React.FC<ElasticCharacterProps> = ({
     const raycaster = new THREE.Raycaster()
     const pointer = new THREE.Vector2(-999, -999)
 
+    // Calculate responsive scale & positioning:
+    // PC / Desktop (>= 1024px): 1.0 (100% original size - completely unchanged)
+    // Mobile (< 640px): 0.65 (35% reduction)
+    // Tablet (640px - 1023px): smooth interpolation between 0.65 and 1.0
+    const getResponsiveLayout = () => {
+      const w = window.innerWidth
+      if (w >= 1024) {
+        return { scale: 1.0, baseY: -0.42 }
+      } else if (w < 640) {
+        return { scale: 0.65, baseY: -0.24 }
+      } else {
+        const progress = (w - 640) / (1024 - 640)
+        return {
+          scale: 0.65 + progress * 0.35,
+          baseY: -0.24 + progress * (-0.42 - -0.24),
+        }
+      }
+    }
+
     // 1. Scene, Camera & WebGL Renderer setup
     const width = container.clientWidth || window.innerWidth
     const height = container.clientHeight || window.innerHeight
@@ -143,8 +162,9 @@ export const ElasticCharacter: React.FC<ElasticCharacterProps> = ({
         })
 
         mesh = new THREE.Mesh(geometry, material)
-        // Positioned lower at y = -0.42 so there is a clean gap between the heading and the top of the hair
-        mesh.position.set(0, -0.42, 0)
+        const { scale: initialScale, baseY: initialBaseY } = getResponsiveLayout()
+        mesh.scale.set(initialScale, initialScale, initialScale)
+        mesh.position.set(0, initialBaseY, 0)
         scene.add(mesh)
         setIsLoading(false)
       },
@@ -180,7 +200,7 @@ export const ElasticCharacter: React.FC<ElasticCharacterProps> = ({
       const intersects = raycaster.intersectObject(mesh)
 
       if (intersects.length > 0) {
-        if ('touches' in e) {
+        if ('touches' in e && e.cancelable) {
           e.preventDefault()
         }
 
@@ -231,7 +251,7 @@ export const ElasticCharacter: React.FC<ElasticCharacterProps> = ({
       updatePointer(clientX, clientY)
 
       if (isDragging && mesh) {
-        if ('touches' in e) {
+        if ('touches' in e && e.cancelable) {
           e.preventDefault()
         }
 
@@ -243,18 +263,23 @@ export const ElasticCharacter: React.FC<ElasticCharacterProps> = ({
           const worldDelta = currentWorldPos.sub(grabPoint)
           const rawDist = worldDelta.length()
 
-          // Progressive non-linear rubber resistance
-          const ratio = Math.min(rawDist / MAX_DRAG_DISTANCE, 0.999)
-          const elasticScale = Math.tanh(ratio * 2.0) * (MAX_DRAG_DISTANCE * 0.5)
+          // Progressive non-linear rubber resistance scaled to mesh size
+          const currentScale = mesh.scale.x || 1.0
+          const maxDrag = MAX_DRAG_DISTANCE * currentScale
+          const ratio = Math.min(rawDist / maxDrag, 0.999)
+          const elasticScale = Math.tanh(ratio * 2.0) * (maxDrag * 0.5)
 
           if (rawDist > 0.0001) {
             worldDelta.multiplyScalar(elasticScale / rawDist)
           }
 
-          // Convert to local coordinates
-          const localDelta = worldDelta.applyEuler(
-            new THREE.Euler(-mesh.rotation.x, -mesh.rotation.y, -mesh.rotation.z)
-          )
+          // Convert to local coordinates adjusting for scale
+          const localDelta = worldDelta
+            .clone()
+            .divideScalar(currentScale)
+            .applyEuler(
+              new THREE.Euler(-mesh.rotation.x, -mesh.rotation.y, -mesh.rotation.z)
+            )
 
           dragOffset.copy(localDelta)
 
@@ -319,10 +344,11 @@ export const ElasticCharacter: React.FC<ElasticCharacterProps> = ({
         return
       }
 
-      // Subtle alive idle breathing animation when not dragged
+      // Responsive base Y + subtle alive idle breathing animation when not dragged
+      const { baseY } = getResponsiveLayout()
       const idleFloatY = isDragging ? 0 : Math.sin(elapsed * 1.6) * 0.02
       const idleFloatZ = isDragging ? 0 : Math.cos(elapsed * 1.2) * 0.015
-      mesh.position.y = -0.42 + idleFloatY
+      mesh.position.y = baseY + idleFloatY
 
       // Head / Eye Cursor Orientation Tracking
       mesh.rotation.y += (targetRotation.y - mesh.rotation.y) * 0.09
@@ -394,6 +420,11 @@ export const ElasticCharacter: React.FC<ElasticCharacterProps> = ({
       camera.aspect = w / h
       camera.updateProjectionMatrix()
       renderer.setSize(w, h)
+
+      if (mesh) {
+        const { scale } = getResponsiveLayout()
+        mesh.scale.set(scale, scale, scale)
+      }
     }
 
     window.addEventListener('resize', handleResize)
@@ -419,7 +450,6 @@ export const ElasticCharacter: React.FC<ElasticCharacterProps> = ({
     <div
       ref={containerRef}
       className={`relative w-full h-full flex items-center justify-center select-none ${className}`}
-      style={{ touchAction: 'none' }}
     >
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -429,3 +459,4 @@ export const ElasticCharacter: React.FC<ElasticCharacterProps> = ({
     </div>
   )
 }
+

@@ -23,8 +23,18 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, index, totalC
   const targetScale = 1 - (totalCards - 1 - index) * 0.03
   const scale = useTransform(scrollYProgress, [0, 1], [1, targetScale])
 
-  // Sticky top offset: 96px on desktop (or responsive top-24 md:top-32) + index * 28px
-  const topOffset = 96 + index * 28
+  // Responsive sticky top offset: 68px + index * 16px on mobile, 96px + index * 28px on desktop
+  const [topOffset, setTopOffset] = React.useState(96 + index * 28)
+
+  React.useEffect(() => {
+    const updateOffset = () => {
+      const isMobile = window.innerWidth < 640
+      setTopOffset((isMobile ? 68 : 96) + index * (isMobile ? 18 : 28))
+    }
+    updateOffset()
+    window.addEventListener('resize', updateOffset)
+    return () => window.removeEventListener('resize', updateOffset)
+  }, [index])
 
   return (
     <div
